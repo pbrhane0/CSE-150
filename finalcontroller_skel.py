@@ -1,4 +1,15 @@
-# Final Skeleton
+# finalcontroller_skel.py
+#
+# Ismael Cortez
+# 3/1/2021
+# CSE 150/L Final Project
+#
+# This script implements the Pox Controller for the company network.
+#
+# The following sources provided example code and/or logic that was used in this file:
+# https://github.com/CPqD/RouteFlow/blob/master/pox/pox/forwarding/l2_learning.py
+# https://stackoverflow.com/questins/37140542/how-to-check-packet-type-is-tcp-syn-or-rst-in-pox-controller
+# http://csie.nqu.edu.tw/smallko/sdn/measure_traffic.pdf
 #
 # Hints/Reminders from Lab 3:
 #
@@ -55,7 +66,81 @@ class Final (object):
     #      (for example, s1 would have switch_id == 1, s2 would have switch_id == 2, etc...)
     # You should use these to determine where a packet came from. To figure out where a packet 
     # is going, you can use the IP header information.
-    print "Example code."
+    
+    # find any packets with the given protocols
+    find_icmp = packet.find("icmp")
+    find_ipv4 = packet.find("ipv4")
+
+    if(find_ipv4 is not None):
+    	if(switch_id == 1):
+    		#######################################################################
+    		# Switch 1 (s1) AKA Floor 1 Switch 1
+    		#
+    		# Connected Hosts: h10 and h20
+    		#######################################################################
+    		if(port_on_switch == 8):
+    			# Source is Host 10 send to Port 9 or Port 3
+    			if(find_ipv4.dstip == "10.1.2.20"):
+    				self.accept(packet, packet_in, 9)
+    			else:
+    				self.accept(packet, packet_in, 3)
+    		elif(port_on_switch == 9):
+    			# Source is Host 20 send to Port 8 or Port 3
+    			if(find_ipv4.dstip == "10.1.1.10"):
+    				self.accept(packet, packet_in, 8)
+    			else:
+    				self.accept(packet, packet_in, 3)
+    		elif(port_on_switch == 3):
+    			# Source is port 3 send to Port 8 or Port 9
+    			if(find_ipv4.dstip == "10.1.1.10"):
+    				self.accept(packet, packet_in, 8)
+    			elif(find_ipv4.dstip == "10.1.2.20"):
+    				self.accept(packet, packet_in, 9)
+    			else:
+    				# Drop packet if coming from unknown port
+    				self.drop(packet, packet_in)
+    		else:
+    			# Drop packet if coming from unknown port
+    			self.drop(packet, packet_in)
+    	elif(switch_id == 2):
+    		#######################################################################
+    		# Switch 2 (s2) AKA Floor 1 Switch 2
+    		#
+    		# Connected Hosts: h30 and h40
+    		#######################################################################
+    		if(port_on_switch == 8):
+    			# Source is Host 30 send to Port 9 or Port 3
+    			if(find_ipv4.dstip == "10.1.4.40"):
+    				self.accept(packet, packet_in, 9)
+    			else:
+    				self.accept(packet, packet_in, 3)
+    		elif(port_on_switch == 9):
+    			# Source is Host 50 send to Port 8 or Port 3
+    			if(find_ipv4.dstip == "10.1.3.30"):
+    				self.accept(packet, packet_in, 8)
+    			else:
+    				self.accept(packet, packet_in, 3)
+    		elif(port_on_switch == 3):
+    			# Source is Port 3 send to Port 8 or Port 9
+    			if(find_ipv4.dstip == "10.1.3.30"):
+    				self.accept(packet, packet_in, 8)
+    			elif(find_ipv4.dstip == "10.1.4.40"):
+    				self.accept(packet, packet_in, 9)
+    			else:
+    				# Drop packet if not addressed to known Host
+    				self.drop(packet, packet_in)
+    		else:
+    			# Drop packet coming from unknown port
+    			self.drop(packet, packet_in)
+    	elif(switch_id == 3):
+    		###################################################################
+    		# Switch 3 (s3) AKA Floor 2 Switch 1
+    		#
+    		# Connected Hosts: h50 and h60
+    		###################################################################
+    else:
+    	# Flood all non-IP traffic
+    	self.accept(packet, packet_in, of.OFPP_FLOOD)
 
   def _handle_PacketIn (self, event):
     """
@@ -65,9 +150,34 @@ class Final (object):
     if not packet.parsed:
       log.warning("Ignoring incomplete packet")
       return
-
     packet_in = event.ofp # The actual ofp_packet_in message.
     self.do_final(packet, packet_in, event.port, event.dpid)
+
+  def accept(self, packet, packet_in, output_port):
+  	"""
+  	If the packet has been identified as containing any given protocol
+  	we process and accept the packet here
+  	"""
+  	msg = of.ofp_flow_mod() # Define an openflow entry
+  	msg.match = of.ofp_match.from_packet(packet) # Match incoming packet
+  	msg.idle_timeout = 30 # Delete if packet is not matched
+  	msg.hard_timeout = 30 # Delete packet on hard timeout
+  	msg.buffer_id = packet_in.buffer_id # Tell the host where to buffer packet
+  	msg.actions.append(of.ofp_action_output(port = output_port)) # Define the port action
+  	msg.data = packet_in # Set the message data
+  	self.connection.send(msg)
+
+  def drop(self, packet, packet_in):
+  	"""
+  	If the packet has not been identified as containing any given protocol
+  	we process and drop the packet here
+  	"""
+  	msg = of.ofp_flow_mod() # Define an openflow entry
+  	msg.match = of.ofp_match.from_packet(packet) # Match incoming packet
+  	msg.idle_timeout = 30 # Delete if packet is not matched
+  	msg.hard_timeout = 30 # Delete packet on hard timeout
+  	msg.buffer_id = packet_in.buffer_id # Tell the host where to buffer packet
+  	self.connection.send(msg)
 
 def launch ():
   """
