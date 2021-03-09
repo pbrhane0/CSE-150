@@ -162,7 +162,7 @@ class Final (object):
     		else:
     			# Drop packet coming from unknown port
     			self.drop(packet, packet_in)
-    	elif(switch_id == "4"):
+    	elif(switch_id == 4):
     		###################################################################
     		# Switch 4 (s4) AKA Floor 2 Switch 2
     		#
