@@ -1,4 +1,13 @@
 #!/usr/bin/python
+#
+# final_skel.py
+#
+# Ismael Cortez
+# 2/22/2021
+# CSE 150/L Final Project
+#
+# A topology for a company network with 2 floors.
+#
 
 from mininet.topo import Topo
 from mininet.net import Mininet
@@ -33,9 +42,46 @@ class final_topo(Topo):
     #
     # self.addLink(s1,h1, port1=8, port2=0)
     # self.addLink(s1,h2, port1=9, port2=0)
-
-    print "Delete me!"
-
+    #
+    # Add all of the hosts
+    # Floor 1 AKA Department A
+    h10 = self.addHost("h10",mac="00:00:00:00:00:01",ip="10.1.1.10/24", defaultRoute="h10-eth0")
+    h20 = self.addHost("h20",mac="00:00:00:00:00:02",ip="10.1.2.20/24", defaultRoute="h20-eth0")
+    h30 = self.addHost("h30",mac="00:00:00:00:00:03",ip="10.1.3.30/24", defaultRoute="h30-eth0")
+    h40 = self.addHost("h40",mac="00:00:00:00:00:04",ip="10.1.4.40/24", defaultRoute="h40-eth0")
+    # Floor 2 AKA Department B
+    h50 = self.addHost("h50",mac="00:00:00:00:00:05",ip="10.2.5.50/24", defaultRoute="h50-eth0")
+    h60 = self.addHost("h60",mac="00:00:00:00:00:06",ip="10.2.6.60/24", defaultRoute="h60-eth0")
+    h70 = self.addHost("h70",mac="00:00:00:00:00:07",ip="10.2.7.70/24", defaultRoute="h70-eth0")
+    h80 = self.addHost("h80",mac="00:00:00:00:00:08",ip="10.2.8.80/24", defaultRoute="h80-eth0")
+    # Floor Unknown
+    h_trust = self.addHost("h_trust",mac="00:00:00:00:00:09",ip="108.24.32.112/24", defaultRoute="h_trust-eth0")
+    h_untrust = self.addHost("h_untrust",mac="00:00:00:00:00:10",ip="106.44.83.103/24", defaultRoute="h_untrust-eth0")
+    h_server = self.addHost("h_server",mac="00:00:00:00:00:11",ip="10.3.9.90/24", defaultRoute="h_server-eth0")
+    # Add all of the switches
+    s1 = self.addSwitch("s1") # Floor 1 Switch 1
+    s2 = self.addSwitch("s2") # Floor 1 Switch 2
+    s3 = self.addSwitch("s3") # Floor 2 Switch 1
+    s4 = self.addSwitch("s4") # Floor 2 Switch 2
+    s5 = self.addSwitch("s5") # Core Switch
+    s6 = self.addSwitch("s6") # Data Center Switch
+    # Add the links
+    self.addLink(h10, s1, port1=0, port2=8) # h10 <--> s1
+    self.addLink(h20, s1, port1=0, port2=9) # h20 <--> s1
+    self.addLink(h30, s2, port1=0, port2=8) # h30 <--> s2
+    self.addLink(h40, s2, port1=0, port2=9) # h40 <--> s2
+    self.addLink(h50, s3, port1=0, port2=8) # h50 <--> s3
+    self.addLink(h60, s3, port1=0, port2=9) # h60 <--> s3
+    self.addLink(h70, s4, port1=0, port2=8) # h70 <--> s4
+    self.addLink(h80, s4, port1=0, port2=9) # h80 <--> s4
+    self.addLink(s1, s5, port1=3, port2=1) # s1 <--> s5
+    self.addLink(s2, s5, port1=3, port2=2) # s2 <--> s5
+    self.addLink(s3, s5, port1=3, port2=3) # s3 <--> s5
+    self.addLink(s4, s5, port1=3, port2=4) # s4 <--> s5
+    self.addLink(s6, s5, port1=2, port2=6) # s6 <--> s5
+    self.addLink(h_trust, s5, port1=0, port2=5) # h_trust <--> s5
+    self.addLink(h_untrust, s5, port1=0, port2=7) # h_untrust <--> s5
+    self.addLink(h_server, s6, port1=0, port2=8) # h_server <--> s6
 def configure():
   topo = final_topo()
   net = Mininet(topo=topo, controller=RemoteController)
