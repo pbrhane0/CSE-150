@@ -138,6 +138,207 @@ class Final (object):
     		#
     		# Connected Hosts: h50 and h60
     		###################################################################
+    		if(port_on_switch == 8):
+    			# Source is Host 50 send to Port 9 or Port 3
+    			if(find_ipv4.dstip == "10.2.6.60"):
+    				self.accept(packet, packet_in, 9)
+    			else:
+    				self.accept(packet, packet_in, 3)
+    		elif(port_on_switch == 9):
+    			# Source is Host 60 send to Port 8 or Port 3
+    			if(find_ipv4.dstip == "10.2.5.50"):
+    				self.accept(packet, packet_in, 8)
+    			else:
+    				self.accept(packet, packet_in, 3)
+    		elif(port_on_switch == 3):
+    			# Source is Port 3 send to Port 8 or Port 9
+    			if(find_ipv4.dstip == "10.2.5.50"):
+    				self.accept(packet, packet_in, 8)
+    			elif(find_ipv4.dstip == "10.2.6.60"):
+    				self.accept(packet, packet_in, 9)
+    			else:
+    				# Drop packet if not addressed to known Host
+    				self.drop(packet, packet_in)
+    		else:
+    			# Drop packet coming from unknown port
+    			self.drop(packet, packet_in)
+    	elif(switch_id == "4"):
+    		###################################################################
+    		# Switch 4 (s4) AKA Floor 2 Switch 2
+    		#
+    		# Connected Hosts: h70 and h80
+    		###################################################################
+    		# Check if the packet was received by Floor 2 Switch 2
+    		if(port_on_switch == 8):
+    			# Source is Host 70 send to Port 9 or Port 3
+    			if(find_ipv4.dstip == "10.2.8.80"):
+    				self.accept(packet, packet_in, 9)
+    			else:
+    				self.accept(packet, packet_in, 3)
+    		elif(port_on_switch == 9):
+    			# Source is Host 80 send to Port 9 or Port 3
+    			if(find_ipv4.dstip == "10.2.7.70"):
+    				self.accept(packet, packet_in, 8)
+    			else:
+    				self.accept(packet, packet_in, 3)
+    		elif(port_on_switch == 3):
+    			# Source is Port 3 send to Port 8 or Port 9
+    			if(find_ipv4.dstip == "10.2.7.70"):
+    				self.accept(packet, packet_in, 8)
+    			elif(find_ipv4.dstip == "10.2.8.80"):
+    				self.accept(packet, packet_in, 9)
+    			else:
+    				# Drop packet if not addressed to known Host
+    				self.drop(packet, packet_in)
+    		else:
+    			# Drop packet coming from unknown port
+    			self.drop(packet, packet_in)
+    	elif(switch_id == 5):
+    		###################################################################
+    		# Switch 5 (s5) AKA Core Switch
+    		#
+    		# Connected Hosts: Trusted Host and Untrusted Host
+    		# Connected Switches: s1, s2, s3, s4, s6
+    		###################################################################
+    		# Packets passing through the Core Switch are attempting to reach a Host on a different switch
+    		# Therefore we allow the Core Switch to decide which traffic to block or accept
+    		# Check if packet is ICMP
+    		if(find_icmp is not None):
+    			###############################################################
+    			# Drop unauthorized ICMP traffic
+    			#
+    			# Untrusted Host cannot send to Hosts 10 - 80 or server
+    			# Trusted Host cannot send to Hosts 10 - 40 or server
+    			###############################################################
+    			# Check if packet is coming from Untrusted Host and heading toward Hosts 10 - 80 or Server
+    			if(port_on_switch == 7 and (find_ipv4.dstip == "10.1.1.10" or find_ipv4.dstip == "10.2.2.20" or find_ipv4.dstip == "10.1.3.30" or find_ipv4.dstip == "10.1.4.40" or find_ipv4.dstip == "10.2.5.50" or find_ipv4.dstip == "10.2.6.60" or find_ipv4.dstip == "10.2.7.70" or find_ipv4.dstip == "10.2.8.80" or find_ipv4.dstip == "10.3.9.90")):
+    				self.drop(packet, packet_in)
+    			elif(port_on_switch == 5 and (find_ipv4.dstip == "10.1.1.10" or find_ipv4.dstip == "10.1.2.20" or find_ipv4.dstip == "10.1.3.30" or find_ipv4.dstip == "10.1.4.40" or find_ipv4.dstip == "10.3.9.90")):
+    				# Check if packet is coming from Trusted Host and heading toward Hosts 10 - 40 or Server
+    				self.drop(packet, packet_in)
+    			elif((port_on_switch == 1 or port_on_switch == 2) and (find_ipv4.dstip == "10.2.5.50" or find_ipv4.dstip == "10.2.6.60" or find_ipv4.dstip == "10.2.7.70" or find_ipv4.dstip == "10.2.8.80")):
+    				# Check if packet is coming from Department A employee and heading toward Department B employee
+    				self.drop(packet, packet_in)
+    			elif((port_on_switch == 3 or port_on_switch == 4) and (find_ipv4.dstip == "10.1.1.10" or find_ipv4.dstip == "10.1.2.20" or find_ipv4.dstip == "10.1.3.30" or find_ipv4.dstip == "10.1.4.40")):
+    				# Check if packet is coming from Hosts 50 - 80 and heading toward Hosts 10 - 40
+    				self.drop(packet, packet_in)
+    			else:
+    				###########################################################
+    				# Accept authorized ICMP traffic
+    				#
+    				# We determine the output port by using the IP header
+    				# of the received packet
+    				###########################################################
+    				if(port_on_switch == 1):
+    					if(find_ipv4.dstip == "10.1.3.30" or find_ipv4.dstip == "10.1.4.40"):
+    						# Host 10 or 20 allowed to communicate to Host 30 or 40
+    						self.accept(packet, packet_in, 2)
+    					elif(find_ipv4.dstip == "10.3.9.90"):
+    						# Host 10 or 20 allowed to communicate to Server
+    						self.accept(packet, packet_in, 6)
+    					else:
+    						# Drop packet with invalid destination
+    						self.drop(packet, packet_in)
+    				elif(port_on_switch == 2):
+    					if(find_ipv4.dstip == "10.1.1.10" or find_ipv4.dstip == "10.1.2.20"):
+    						# Host 30 or 40 allowed to communicate to Host 10 or 20
+    						self.accept(packet, packet_in, 1)
+    					elif(find_ipv4.dstip == "10.3.9.90"):
+    						# Host 30 or 40 allowed to communicate to Server
+    						self.accept(packet, packet_in, 6)
+    					else:
+    						# Drop packet with invalid destination
+    						self.drop(packet, packet_in)
+    				elif(port_on_switch == 3):
+    					if(find_ipv4.dstip == "10.2.7.70" or find_ipv4.dstip == "10.2.8.80"):
+    						# Host 50 or 60 allowed to communicate to Host 70 or 80
+    						self.accept(packet, packet_in, 4)
+    					elif(find_ipv4.dstip == "108.24.32.112"):
+    						# Host 50 or 60 allowed to communicate to Trusted Host
+    						self.accept(packet, packet_in, 5)
+    					elif(find_ipv4.dstip == "10.3.9.90"):
+    						# Host 50 or 60 allowed to communicate to Server
+    						self.accept(packet, packet_in, 6)
+    					else:
+    						# Drop packet with invalid destination
+    						self.drop(packet, packet_in)
+    				elif(port_on_switch == 4):
+    					if(find_ipv4.dstip == "10.2.5.50" or find_ipv4.dstip == "10.2.6.60"):
+    						# Host 70 or 80 allowed to communicate to Host 50 or 60
+    						self.accept(packet, packet_in, 3)
+    					elif(find_ipv4.dstip == "108.24.32.112"):
+    						# Host 70 or 80 allowed to communicate with Trusted Host
+    						self.accept(packet, packet_in, 5)
+    					elif(find_ipv4.dstip == "10.3.9.90"):
+    						# Host 70 or 80 allowed to communicate to Server
+    						self.accept(packet, packet_in, 6)
+    					else:
+    						# Drop packet with invalid destination
+    						self.drop(packet, packet_in)
+    				elif(port_on_switch == 5):
+    					if(find_ipv4.dstip == "10.2.5.50" or find_ipv4.dstip == "10.2.6.60"):
+    						# Trusted Host allowed to communicate to Host 50 or 60
+    						self.accept(packet, packet_in, 3)
+    					elif(find_ipv4.dstip == "10.2.7.70" or find_ipv4.dstip == "10.2.8.80"):
+    						# Trusted Host allowed to communicate to Host 70 or 80
+    						self.accept(packet, packet_in, 4)
+    					elif(find_ipv4.dstip == "106.44.83.103"):
+    						# Trusted Host allowed to communicate to Untrusted Host
+    						self.accept(packet, packet_in, 7)
+    					else:
+    						# Drop packet with invalid destination
+    						self.drop(packet, packet_in)
+    				elif(port_on_switch == 6):
+    					# Server is authorized to send packets to all Hosts on network
+    					if(find_ipv4.dstip == "10.1.1.10" or find_ipv4.dstip == "10.1.2.20"):
+    						# Send out Port 1
+    						self.accept(packet, packet_in, 1)
+    					elif(find_ipv4.dstip == "10.1.3.30" or find_ipv4.dstip == "10.1.4.40"):
+    						# Send out Port 2
+    						self.accept(packet, packet_in, 2)
+    					elif(find_ipv4.dstip == "10.2.5.50" or find_ipv4.dstip == "10.2.6.60"):
+    						# Send out Port 3
+    						self.accept(packet, packet_in, 3)
+    					elif(find_ipv4.dstip == "10.2.7.70" or find_ipv4.dstip == "10.2.8.80"):
+    						# Send out Port 4
+    						self.accept(packet, packet_in, 4)
+    					else:
+    						# Drop packet to unknown Host
+    						self.drop(packet, packet_in)
+    				elif(port_on_switch == 7):
+    					if(find_ipv4.dstip == "108.24.32.112"):
+    						# Untrusted Host allowed to communicate with Trusted Host
+    						self.accept(packet, packet_in, 5)
+    					else:
+    						# Drop packet coming from unknown port
+    						self.drop(packet, packet_in)
+    				else:
+    					# Drop packet coming from unknown port
+    					self.drop(packet, packet_in)
+    		elif(find_ipv4.srcip == "108.24.32.112" and find_ipv4.dstip == "10.3.9.90"):
+    			# IP traffic from Trusted Host to Server is unauthorized
+    			self.drop(packet, packet_in)
+    		elif(find_ipv4.srcip == "106.44.83.103" and find_ipv4.dstip == "10.3.9.90"):
+    			# IP traffic from Untrusted Host to Server is unauthorized
+    			self.drop(packet, packet_in)
+    		else:
+    			# All other IP traffic is authorized
+    			self.accept(packet, packet_in, of.OFPP_FLOOD)
+    	elif(switch_id == 6):
+    		###################################################################
+    		# Switch 6 (s6) AKA Data Center Switch
+    		#
+    		# Connected Hosts: Server
+    		###################################################################
+    		if(port_on_switch == 8):
+    			# Source is Server send out Port 2
+    			self.accept(packet, packet_in, 2)
+    		elif(port_on_switch == 2):
+    			# Source is Port 2 send to Port 8
+    			self.accept(packet, packet_in, 8)
+    		else:
+    			# Drop packet with unknown source
+    			self.drop(packet, packet_in)
     else:
     	# Flood all non-IP traffic
     	self.accept(packet, packet_in, of.OFPP_FLOOD)
@@ -187,3 +388,4 @@ def launch ():
     log.debug("Controlling %s" % (event.connection,))
     Final(event.connection)
   core.openflow.addListenerByName("ConnectionUp", start_switch)
+
