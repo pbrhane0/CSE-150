@@ -1,9 +1,5 @@
 README.txt
 
-Name: Ismael Cortez
-Email: ijcortez@ucsc.edu
-CruzID: ijcortez
-Student ID: 1746941
 Date: 3/7/2021
 Assignment: Final Project
 
